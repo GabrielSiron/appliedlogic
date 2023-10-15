@@ -28,10 +28,10 @@ class Proposition:
 
     @ChangeRepresentation
     def __invert__(self) -> bool:
-        return not self.value
+        return TrueValue(not self.value)
     
     
-class CompostProposition:
+class CompoundProposition:
     def __init__(self) -> None:
         self.precedence_operators = {
             '__add__': 0,
@@ -59,6 +59,9 @@ class CompostProposition:
     def __len__(self) -> int:
         return len(self.value)
 
+    def pop(self, element) -> None:
+        self.value.pop(element)
+
     def remove(self, element) -> None:
         self.value.remove(element)
 
@@ -71,37 +74,64 @@ class CompostProposition:
     def add(self, obj) -> None:
         self.value.append(obj)
 
-    def calculate_value(self, aux=None, previous_proposition=None, **kwargs) -> bool:
-        aux = aux or self
-        if isinstance(aux, TrueValue):
-            return aux.value
+    @staticmethod
+    def do_operation(logical_operator, aridity, propositions):
+        if aridity == 1: return logical_operator(propositions[0])
+        return logical_operator(propositions[0], propositions[1])    
+    
+    def find_compound_propositions(compound_proposition):
+        compound_propositions = [x for x in compound_proposition if isinstance(x, CompoundProposition)]
+        if compound_propositions:
+            return compound_propositions[0]
         
-        for proposition in aux.value:
-            if isinstance(proposition, CompostProposition):
-                return self.calculate_value(aux=proposition, previous_proposition=aux, **kwargs)
+        return False
 
-        else:
-            while len(aux) != 1:
-                operator_index = self.find_bigger_precedence_op(aux)
-                operator = aux.value[operator_index]
-                aridity = self.aridity_operators[operator.__name__]
 
-                if aridity == 2:
-                    first_value = aux.value[operator_index - 1]
-                    second_value = aux.value[operator_index + 1]
-                    result = operator(first_value, second_value)
-                    aux.remove(first_value)
-                    aux.remove(operator)
-                    aux.remove(second_value)
-                    aux.append(result)
-                
-                if previous_proposition:
-                    previous_proposition[previous_proposition.index(aux)] = result
-                    if kwargs.get('debug'):
-                        print(self)
-                    return self.calculate_value(**kwargs)
-                
-                return result
+    @staticmethod
+    def organizing_proposition(compound_proposition, new_value, first_index, remove_count):
+        for _ in range(remove_count):
+            compound_proposition.pop(first_index)
+
+        compound_proposition.append(new_value)
+
+    @staticmethod
+    def separeting_components(compound_proposition, operator_index, aridity):
+        if aridity == 1:
+            return compound_proposition[operator_index - 1], compound_proposition[operator_index + 1]
+        
+        return compound_proposition[operator_index + 1]
+    
+    def calculate_value(self, propositions=None, previous_proposition=None, **kwargs) -> bool:
+        propositions = propositions or self
+        if isinstance(propositions, TrueValue):
+            return propositions.value
+        
+        if self.find_compound_propositions(propositions):
+            return self.calculate_value(propositions=proposition, previous_proposition=propositions, **kwargs)
+
+        while len(propositions) != 1:
+            operator_index = self.find_bigger_precedence_op(propositions)
+            operator = propositions.value[operator_index]
+            aridity = self.aridity_operators[operator.__name__]
+
+            if aridity == 1:
+                proposition = propositions.value[operator_index + 1]
+                result = self.do_operation(operator, aridity, (proposition,))
+                self.organizing_proposition(propositions, result, first_index=operator_index, remove_count=2)
+            
+            elif aridity == 2:
+                left_proposition = propositions.value[operator_index - 1]
+                right_proposition = propositions.value[operator_index + 1]
+                result = self.do_operation(operator, aridity, (right_proposition, left_proposition))
+                self.organizing_proposition(propositions, result, first_index=operator_index - 1, remove_count=3)
+            
+            if previous_proposition:
+                previous_proposition[previous_proposition.index(propositions)] = result
+                if kwargs.get('debug'):
+                    print(self)
+                return self.calculate_value(**kwargs)
+            
+            return result
 
     def find_bigger_precedence_op(self, proposition):
         bigger, operator_index = 0, 0
