@@ -36,7 +36,7 @@ class Proposition:
     
     
 class CompoundProposition:
-    def __init__(self) -> None:
+    def __init__(self, value) -> None:
         self.precedence_operators = {
             '__add__': 0,
             '__mul__': 0,
@@ -49,7 +49,12 @@ class CompoundProposition:
             '__invert__': 1
         }
 
-        self.value = []
+        self.value = value
+        self.components = set()
+
+        for element in self.value:
+            if isinstance(element, Proposition):
+                self.components.add(element)
 
     def __str__(self) -> str:
         return str(self.value).replace('[', '(').replace(']', ')').replace(',', ' ')
@@ -66,23 +71,41 @@ class CompoundProposition:
     def pop(self, element) -> None:
         self.value.pop(element)
 
-    def prepare_calculus(self) -> None:
+    def prepare_calculus(self, **kwargs) -> None:
+        
+        if kwargs.get('debug'):
+            for element in self.components:
+                print(f"{element} is {element.value}")
+
+            print()
+            print(f"\n{self}\n")
+
+            print("\nSolving the proposition...\n")
+
         self.copy_value = deepcopy(self.value)
+        
 
     def remove(self, element) -> None:
         self.value.remove(element)
 
     def append(self, element) -> None:
         self.value.append(element)
+        if isinstance(element, Proposition):
+            self.components.add(element)
 
     def create(self, elements):
         self.value.extend(elements)
+        for element in elements:
+            if isinstance(element, Proposition):
+                self.components.add(element)
 
     def index(self, element) -> int:
         return self.value.index(element)
     
-    def add(self, obj) -> None:
-        self.value.append(obj)
+    def add(self, element) -> None:
+        self.value.append(element)
+        if isinstance(element, Proposition):
+            self.components.add(element)
 
     @staticmethod
     def do_operation(logical_operator, aridity, propositions):
@@ -139,7 +162,9 @@ class CompoundProposition:
                 result = self.do_operation(operator, aridity, (right_proposition, left_proposition))
             
             self.organizing_proposition(propositions, result, first_index=operator_index - 1, remove_count=aridity + 1)
-             
+            
+            if kwargs.get('debug'):
+                print(self)
         if previous_proposition:
             previous_proposition[previous_proposition.index(propositions)] = result
             return self.calculate_value(**kwargs)
