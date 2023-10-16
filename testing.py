@@ -33,7 +33,5 @@ class TestCalculusOfTruthValue(unittest.TestCase):
             proposition.prepare_calculus()
             self.assertEqual(proposition.calculate_value(), False)
 
-    def test_propositions(self):
-        p = Proposition(text='p', value=True)
 if __name__ == '__main__':
     unittest.main() 
