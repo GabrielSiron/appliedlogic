@@ -1,5 +1,5 @@
 from copy import deepcopy
-from utils.function_decorator import ChangeRepresentation
+from utils.function_decorator import LogicOperator
 
 class TruthValue:
     def __init__(self, value) -> None:
@@ -20,23 +20,23 @@ class Proposition:
         return str(self)
     
     @staticmethod
-    @ChangeRepresentation
+    @LogicOperator
     def __add__(left_proposition, right_proposition) -> TruthValue:
         return TruthValue(left_proposition.value or right_proposition.value)
     
     @staticmethod
-    @ChangeRepresentation
+    @LogicOperator
     def __mul__(left_proposition, right_proposition) -> TruthValue:
         return TruthValue(left_proposition.value and right_proposition.value)
 
     @staticmethod
-    @ChangeRepresentation
+    @LogicOperator
     def __invert__(proposition) -> bool:
         return TruthValue(not proposition.value)
     
     
 class CompoundProposition:
-    def __init__(self, value) -> None:
+    def __init__(self, value=None) -> None:
         self.precedence_operators = {
             '__add__': 0,
             '__mul__': 0,
@@ -49,12 +49,13 @@ class CompoundProposition:
             '__invert__': 1
         }
 
-        self.value = value
+        self.value = value or []
         self.components = set()
 
-        for element in self.value:
-            if isinstance(element, Proposition):
-                self.components.add(element)
+        if value:
+            for element in self.value:
+                if isinstance(element, Proposition):
+                    self.components.add(element)
 
     def __str__(self) -> str:
         return str(self.value).replace('[', '(').replace(']', ')').replace(',', ' ')
@@ -71,6 +72,12 @@ class CompoundProposition:
     def pop(self, element) -> None:
         self.value.pop(element)
 
+    def __getitem__(self, index):
+        return self.value[index]
+    
+    def __iter__(self):
+        return iter(self.value)
+    
     def prepare_calculus(self, **kwargs) -> None:
         
         if kwargs.get('debug'):
@@ -150,7 +157,7 @@ class CompoundProposition:
 
         while len(propositions) != 1:
             operator_index, operator = self.find_bigger_precedence_op(propositions)
-            aridity = self.aridity_operators[operator.__name__]
+            aridity = self.aridity_operators[operator.name]
 
             if aridity == 1:
                 proposition = propositions.value[operator_index + 1]
@@ -177,8 +184,8 @@ class CompoundProposition:
         bigger, operator_index = 0, 0
         for index, element in enumerate(proposition.value):
             if callable(element):
-                if self.precedence_operators[element.__name__] >= bigger:
-                    bigger = self.precedence_operators[element.__name__]
+                if self.precedence_operators[element.name] >= bigger:
+                    bigger = self.precedence_operators[element.name]
                     operator_index = index
         
         return operator_index, proposition.value[operator_index]
