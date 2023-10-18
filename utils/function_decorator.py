@@ -1,7 +1,7 @@
-class ChangeRepresentation:
+class LogicOperator:
     def __init__(self, functor):
         self.functor = functor
-        self.__name__ = functor.__name__
+        self.name = functor.__name__
         self.__doc__ = functor.__doc__
         self.mapping = {
             '__add__': 'v',
@@ -13,4 +13,4 @@ class ChangeRepresentation:
         return self.functor(*args, **kwargs)
 
     def __repr__(self):
-        return '%s' % self.mapping[self.functor.__name__]
+        return '%s' % self.mapping[self.name]

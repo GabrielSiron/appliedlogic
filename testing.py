@@ -1,5 +1,6 @@
 import unittest
 from proposition import Proposition, CompoundProposition, TruthValue
+from equivalence import Equivalence
 
 class TestCalculusOfTruthValue(unittest.TestCase):
     def test_keep_the_truth_value(self):
@@ -33,5 +34,19 @@ class TestCalculusOfTruthValue(unittest.TestCase):
             proposition.prepare_calculus()
             self.assertEqual(proposition.calculate_value(), False)
 
+    def test_existing_distributivity_pattern(self):
+        p = Proposition(text='p')
+        q = Proposition(text='q')
+        proposition = CompoundProposition([p, p.__add__, CompoundProposition([p, p.__mul__, q])])
+        tester = Equivalence()
+        self.assertEqual(tester.check_distributivity(proposition), True)
+
+    def test_non_existing_distributive_pattern(self):
+        p = Proposition(text='p')
+        q = Proposition(text='q')
+        proposition = CompoundProposition([p, p.__mul__, q])
+        tester = Equivalence()
+        self.assertEqual(tester.check_distributivity(proposition), False)
+        
 if __name__ == '__main__':
     unittest.main() 
